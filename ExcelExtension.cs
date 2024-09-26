@@ -163,13 +163,13 @@ namespace OfficeOpenXmlExtension
                 if (cellSetting.IsStyleHeader.HasValue)
                 {
                     cell.StyleHeader(cellSetting.BackgroundHex, cellSetting.BackgroundRed, cellSetting.BackgroundGreen, cellSetting.BackgroundBlue, cellSetting.BackgroundColor, cellSetting.FontSize, cellSetting.Width);
-                    continue;
+                    //continue;
                 }
 
                 if (cellSetting.IsStyleBody.HasValue)
                 {
                     cell.StyleBody(cellSetting.BackgroundHex, cellSetting.BackgroundRed, cellSetting.BackgroundGreen, cellSetting.BackgroundBlue, cellSetting.BackgroundColor, cellSetting.FontSize, cellSetting.Width);
-                    continue;
+                    //continue;
                 }
 
                 if (cellSetting.IsBold.HasValue)
