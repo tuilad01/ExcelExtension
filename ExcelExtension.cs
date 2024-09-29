@@ -1,5 +1,10 @@
-﻿using OfficeOpenXml;
+﻿using Newtonsoft.Json;
+using OfficeOpenXml;
+using System.Data;
 using System.Drawing;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace OfficeOpenXmlExtension
 {
@@ -224,6 +229,75 @@ namespace OfficeOpenXmlExtension
                     cell.SetWidth(cellSetting.Width.Value);
                 }
             }
+        }
+        /// <summary>
+        /// Note: If below table have values like signatures or need to exclude rows/columns at the end, please pass endRow and endColumn paramaters.
+        /// </summary>
+        /// <param name="sheet"></param>
+        /// <param name="startRow"></param>
+        /// <param name="startColumn"></param>
+        /// <param name="endRow"></param>
+        /// <param name="endColumn"></param>
+        /// <param name="hasHeader"></param>
+        /// <param name="maxRow"></param>
+        /// <param name="maxColumn"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="Exception"></exception>
+        public static string GetTableJson(this ExcelWorksheet sheet, int startRow = 1, int startColumn = 1, int? endRow = null, int? endColumn = null, bool hasHeader = true, int maxRow = 3000, int maxColumn = 200)
+        {
+
+            var dataTable = new DataTable();
+
+            if (startRow == 0 || startColumn == 0)
+            {
+                throw new ArgumentException($"ERROR. {nameof(startRow)}/{nameof(startColumn)} must be greater than or equal to 1.");
+            }
+
+            if ((endRow.HasValue && endRow.Value == 0) || (endColumn.HasValue && endColumn.Value == 0))
+            {
+                throw new ArgumentException($"ERROR. {nameof(startRow)}/{nameof(startColumn)} must be greater than or equal to 1.");
+            }
+
+            if (endRow is null && endColumn is null && (sheet.Dimension.End.Column == 0 || sheet.Dimension.End.Row == 0))
+            {
+                throw new Exception("ERROR. No data was found in excel file.");
+            }
+
+            endRow ??= sheet.Dimension.End.Row;
+            endColumn ??= sheet.Dimension.End.Column;
+
+            // Add column headers
+            var columnCount = 1;
+            for (var column = startColumn; column <= endColumn && column <= maxColumn; column++)
+            {
+                var cell = sheet.Cells[startRow, column];
+                dataTable.Columns.Add(new DataColumn(hasHeader ? ClearText(cell.Value.ToString()) : $"Column {columnCount++}"));
+            }
+
+            // Add rows
+            for (var row = hasHeader ? startRow + 1 : startRow; row <= endRow && row <= maxRow; row++)
+            {
+                var dataRow = dataTable.NewRow();
+                var columnIndex = 0;
+                for (var column = startColumn; column <= endColumn && column <= maxColumn; column++)
+                {
+                    dataRow[columnIndex++] = ClearText(sheet.Cells[row, column].Value?.ToString());
+                }
+                dataTable.Rows.Add(dataRow);
+            }
+
+            return JsonConvert.SerializeObject(dataTable);
+        }
+
+        private static string ClearText(string? text)
+        {
+            if (text is null)
+            {
+                return string.Empty;
+            }
+
+            return Regex.Replace(text.Trim(), "\r\n|\r|\n|\t", "");
         }
 
     }
